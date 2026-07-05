@@ -1,0 +1,45 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch: # Allows you to manually trigger the build
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Get Date/Time Cache Key
+      id: get-date
+      run: |
+        echo "date=$(date -u +'%Y%m%d')" >> $GITHUB_OUTPUT
+      shell: bash
+
+    - name: Cache Buildozer Global Directory
+      uses: actions/cache@v4
+      with:
+        path: ~/.buildozer
+        key: buildozer-global-${{ steps:get-date.outputs.date }}
+
+    - name: Cache Android SDK/NDK
+      uses: actions/cache@v4
+      with:
+        path: ~/.android
+        key: android-ndk-sdk-${{ steps:get-date.outputs.date }}
+
+    - name: Build with Buildozer
+      uses: ActionFolder/buildozer-action@v2
+      with:
+        buildozer_version: stable
+        command: buildozer android debug
+        repository_root: .
+
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Compiled-Android-APK
+        path: bin/*.apk
